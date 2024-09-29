@@ -45,17 +45,19 @@ class PriceInfo(MongoDBAbstract):
     vol_as_u = 0
     # 以币本位计算的交易额
     vol_as_c = 0
+    fee = 0
 
-    def __init__(self, pair,timestamp, vol_as_u, close, high, low, open, vol_as_c, is_closed):
+    def __init__(self, pair,timestamp, vol_as_u, high, low, open,close, is_closed,interval='10s',fee=0):
         self.pair = pair
         self.timestamp = timestamp
         self.vol_as_u = vol_as_u
-        self.vol_as_c = vol_as_c
         self.close = close
         self.high = high
         self.low = low
         self.is_closed = is_closed
         self.open = open
+        self.interval = interval
+        self.fee = fee
 
 
 class SpotPriceInfo(PriceInfo):

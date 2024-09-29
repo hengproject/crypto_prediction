@@ -43,7 +43,7 @@ def _exclude_crypto_non_exist_spot(list_of_crypto_types):
     return new_list
 
 
-def _exclude_crypto_non_exist_future(list_of_crypto_types):
+def _exclude_crypto_non_exist_future(list_of_crypto_types,exclude_extra=['GNO_USDT','XDC_USDT']):
     configuration = gate_api.Configuration(
         host="https://api.gateio.ws/api/v4"
     )
@@ -74,10 +74,11 @@ def _exclude_crypto_non_exist_future(list_of_crypto_types):
         i += 1
         future_list = future_list + tmp
         tmp = _get_future_datas(i * 100)
-    print(future_list)
     for each in new_list:
         if each not in future_list:
             new_list.remove(each)
+    for each in exclude_extra:
+        new_list.remove(each)
     return new_list
 
 

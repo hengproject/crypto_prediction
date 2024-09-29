@@ -10,6 +10,7 @@ _configuration = gate_api.Configuration(
 )
 gate_api_client = gate_api.ApiClient(_configuration)
 
+
 # 何时开始存储数据，若为0，则忽略该选项
 default_from_time = 0
 

@@ -1,4 +1,5 @@
 from gate_datas.configs.configs import db
+from gate_datas.gate_info_getter.entity import FuturePriceInfo,SpotPriceInfo
 
 collection = db['test']
 def test_find():
@@ -43,6 +44,8 @@ def test_find_out():
     if finds:
         print("found")
 
+def test_obj_save():
+    SpotPriceInfo("test_usdt",114514,10,30,100,10,15,40000,True).save(collection)
 
 if __name__ == '__main__':
-    test_find_out()
+    pass
