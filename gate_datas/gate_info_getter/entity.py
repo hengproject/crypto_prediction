@@ -32,7 +32,7 @@ class MongoDBAbstract:
 
 
 class PriceInfo(MongoDBAbstract):
-    pair=""
+    pair = ""
     type = ""
     timestamp = 0
     interval = ""
@@ -45,9 +45,8 @@ class PriceInfo(MongoDBAbstract):
     vol_as_u = 0
     # 以币本位计算的交易额
     vol_as_c = 0
-    fee = 0
 
-    def __init__(self, pair,timestamp, vol_as_u, high, low, open,close, is_closed,interval='10s',fee=0):
+    def __init__(self, pair, timestamp, vol_as_u, high, low, open, close, is_closed, interval='10s'):
         self.pair = pair
         self.timestamp = timestamp
         self.vol_as_u = vol_as_u
@@ -57,7 +56,6 @@ class PriceInfo(MongoDBAbstract):
         self.is_closed = is_closed
         self.open = open
         self.interval = interval
-        self.fee = fee
 
 
 class SpotPriceInfo(PriceInfo):
@@ -70,3 +68,15 @@ class FuturePriceInfo(PriceInfo):
     def __init__(self, *args):
         super().__init__(*args)
         self.type = "future"
+
+
+class RateInfo(MongoDBAbstract):
+    ts = 0
+    rate = 0.0
+    pair = ""
+    type = ""
+    def __init__(self, ts, rate,pair,type):
+        self.ts = ts
+        self.rate = rate
+        self.pair = pair
+        self.type = type

@@ -5,7 +5,7 @@ import time
 import gate_api
 from gate_api.exceptions import ApiException, GateApiException
 from gate_datas.configs.configs import crypto_future_type_list,db
-from gate_datas.gate_info_getter.api_caller import get_future_data
+from gate_datas.gate_info_getter.api_caller.future_api_caller import get_future_data
 
 
 def get_creat_time(contract):
