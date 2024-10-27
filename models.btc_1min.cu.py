@@ -4,7 +4,7 @@ import torch.optim as optim
 import numpy as np
 import matplotlib.pyplot as plt
 from sklearn.preprocessing import MinMaxScaler
-from data_loader import crypto_data  # Assuming data_loader provides the data
+from data_loader import crypto_data
 
 
 # Data preparation function for PyTorch
