@@ -3,29 +3,25 @@ import torch.nn as nn
 import torch.optim as optim
 import numpy as np
 import matplotlib.pyplot as plt
-from sklearn.preprocessing import MinMaxScaler
-from data_loader import crypto_data
+from data_loader import crypto_data  # Assuming data_loader provides the data
 
-
-# Data preparation function for PyTorch
+# Prepare the data without scaling
 def prepare_rnn_data(data, sequence_length=60):
+    # Extract relevant columns
     features = data[['open', 'high', 'low', 'close', 'vol_as_u']].values
-    scaler = MinMaxScaler(feature_range=(0, 1))
-    scaled_features = scaler.fit_transform(features)
 
+    # Create sequences
     X, y = [], []
-    for i in range(sequence_length, len(scaled_features)):
-        X.append(scaled_features[i - sequence_length:i])
-        y.append(scaled_features[i, 3])  # Predicting the 'close' price
+    for i in range(sequence_length, len(features)):
+        X.append(features[i-sequence_length:i])  # Sequence of features
+        y.append(features[i, 3])  # Predicting the 'close' price only
 
     X, y = np.array(X), np.array(y)
     X, y = torch.tensor(X, dtype=torch.float32), torch.tensor(y, dtype=torch.float32)
-    return X, y, scaler
+    return X, y
 
-
-# Prepare data
-X, y, scaler = prepare_rnn_data(crypto_data)
-
+# Prepare data without scaling
+X, y = prepare_rnn_data(crypto_data)
 
 # Define the RNN model
 class PricePredictionRNN(nn.Module):
@@ -35,35 +31,16 @@ class PricePredictionRNN(nn.Module):
         self.fc = nn.Linear(hidden_size, output_size)
 
     def forward(self, x):
-        out, _ = self.lstm(x)  # LSTM layer
-        out = out[:, -1, :]  # Take the last output in the sequence
-        out = self.fc(out)  # Fully connected layer for output
+        out, _ = self.lstm(x)   # LSTM layer
+        out = out[:, -1, :]     # Take the last output in the sequence
+        out = self.fc(out)      # Fully connected layer for output
         return out
-
-
-# Define the SVR-style loss function with dynamic epsilon
-class SVRLoss(nn.Module):
-    def __init__(self, epsilon_factor=0.0001):  # 0.01% as 0.0001
-        super(SVRLoss, self).__init__()
-        self.epsilon_factor = epsilon_factor
-
-    def forward(self, predictions, targets):
-        # Calculate epsilon as 0.01% of the target prices
-        epsilon = targets * self.epsilon_factor
-
-        # Calculate absolute difference
-        diff = torch.abs(predictions - targets)
-
-        # Apply epsilon-insensitive loss
-        loss = torch.where(diff > epsilon, diff - epsilon, torch.zeros_like(diff))
-        return loss.mean()
-
 
 # Instantiate the model
 model = PricePredictionRNN(input_size=X.shape[2])
 
-# Define custom SVR-style loss and optimizer
-criterion = SVRLoss(epsilon_factor=0.0001)
+# Define loss and optimizer
+criterion = nn.MSELoss()
 optimizer = optim.Adam(model.parameters(), lr=0.001)
 
 # Split data into train and test sets
@@ -77,33 +54,23 @@ for epoch in range(num_epochs):
     model.train()
     optimizer.zero_grad()
     outputs = model(X_train)
-    loss = criterion(outputs, y_train.unsqueeze(1))  # Match dimensions by unsqueezing y_train
+    loss = criterion(outputs.squeeze(), y_train)  # Squeeze outputs to match y_train dimensions
     loss.backward()
     optimizer.step()
 
-    if (epoch + 1) % 10 == 0:
-        print(f'Epoch [{epoch + 1}/{num_epochs}], Loss: {loss.item():.4f}')
+    if (epoch+1) % 10 == 0:
+        print(f'Epoch [{epoch+1}/{num_epochs}], Loss: {loss.item():.4f}')
 
 # Switch to evaluation mode
 model.eval()
 with torch.no_grad():
-    # Generate predictions and move to CPU for inverse scaling
-    predicted = model(X_test).detach().cpu().numpy()
-
-    # Create a placeholder for scaling that matches the input structure
-    placeholder = np.zeros((predicted.shape[0], 5))  # 5 columns: open, high, low, close, vol_as_u
-    placeholder[:, 3] = predicted.flatten()  # Place predicted close prices in the correct column (index 3)
-    predicted_prices = scaler.inverse_transform(placeholder)[:, 3]  # Extract only the inverse-transformed close price
-
-    # Actual prices for comparison
-    placeholder_actual = np.zeros((y_test.shape[0], 5))
-    placeholder_actual[:, 3] = y_test.cpu().numpy()  # Place actual close prices in the same column
-    actual_prices = scaler.inverse_transform(placeholder_actual)[:, 3]  # Extract only the close price
+    predicted = model(X_test).detach().cpu().numpy().flatten()  # Flatten to 1D array for easy plotting
+    actual = y_test.cpu().numpy()  # No need for inverse scaling since we worked with raw prices
 
 # Plot the results
-plt.plot(actual_prices, color='black', label='Actual Price')
-plt.plot(predicted_prices, color='blue', label='Predicted Price')
-plt.title('Price Prediction')
+plt.plot(actual, color='black', label='Actual Price')
+plt.plot(predicted, color='blue', label='Predicted Price')
+plt.title('Price Prediction without Scaling')
 plt.xlabel('Time')
 plt.ylabel('Price')
 plt.legend()
