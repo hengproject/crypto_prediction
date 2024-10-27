@@ -6,9 +6,6 @@ import matplotlib.pyplot as plt
 from sklearn.preprocessing import MinMaxScaler
 from data_loader import crypto_data  # Assuming data_loader provides the data
 
-# Set device to GPU if available
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
 
 # Data preparation function for PyTorch
 def prepare_rnn_data(data, sequence_length=60):
@@ -23,7 +20,7 @@ def prepare_rnn_data(data, sequence_length=60):
 
     X, y = np.array(X), np.array(y)
     X, y = torch.tensor(X, dtype=torch.float32), torch.tensor(y, dtype=torch.float32)
-    return X.to(device), y.to(device), scaler
+    return X, y, scaler
 
 
 # Prepare data
@@ -62,11 +59,11 @@ class SVRLoss(nn.Module):
         return loss.mean()
 
 
-# Instantiate the model and move it to the device (GPU if available)
-model = PricePredictionRNN(input_size=X.shape[2]).to(device)
+# Instantiate the model
+model = PricePredictionRNN(input_size=X.shape[2])
 
 # Define custom SVR-style loss and optimizer
-criterion = SVRLoss(epsilon_factor=0.0001).to(device)
+criterion = SVRLoss(epsilon_factor=0.0001)
 optimizer = optim.Adam(model.parameters(), lr=0.001)
 
 # Split data into train and test sets
@@ -90,13 +87,13 @@ for epoch in range(num_epochs):
 # Switch to evaluation mode
 model.eval()
 with torch.no_grad():
-    predicted = model(X_test).detach().cpu().numpy()  # Move to CPU for inverse scaling
+    predicted = model(X_test).detach().numpy()
     predicted_prices = scaler.inverse_transform(np.concatenate((np.zeros((predicted.shape[0], 4)), predicted), axis=1))[
                        :, 4]
 
     # Actual prices for comparison
     actual_prices = scaler.inverse_transform(
-        np.concatenate((np.zeros((y_test.shape[0], 4)), y_test.view(-1, 1).cpu().numpy()), axis=1))[:, 4]
+        np.concatenate((np.zeros((y_test.shape[0], 4)), y_test.view(-1, 1).numpy()), axis=1))[:, 4]
 
 # Plot the results
 plt.plot(actual_prices, color='black', label='Actual Price')
