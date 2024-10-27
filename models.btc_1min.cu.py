@@ -6,6 +6,9 @@ import matplotlib.pyplot as plt
 from sklearn.preprocessing import MinMaxScaler
 from data_loader import crypto_data  # Assuming data_loader provides the data
 
+# Set device to GPU if available
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
 
 # Data preparation function for PyTorch
 def prepare_rnn_data(data, sequence_length=60):
@@ -20,7 +23,7 @@ def prepare_rnn_data(data, sequence_length=60):
 
     X, y = np.array(X), np.array(y)
     X, y = torch.tensor(X, dtype=torch.float32), torch.tensor(y, dtype=torch.float32)
-    return X, y, scaler
+    return X.to(device), y.to(device), scaler
 
 
 # Prepare data
@@ -59,11 +62,11 @@ class SVRLoss(nn.Module):
         return loss.mean()
 
 
-# Instantiate the model
-model = PricePredictionRNN(input_size=X.shape[2])
+# Instantiate the model and move it to the device (GPU if available)
+model = PricePredictionRNN(input_size=X.shape[2]).to(device)
 
 # Define custom SVR-style loss and optimizer
-criterion = SVRLoss(epsilon_factor=0.0001)
+criterion = SVRLoss(epsilon_factor=0.0001).to(device)
 optimizer = optim.Adam(model.parameters(), lr=0.001)
 
 # Split data into train and test sets
@@ -87,18 +90,13 @@ for epoch in range(num_epochs):
 # Switch to evaluation mode
 model.eval()
 with torch.no_grad():
-    # Generate predictions and move to CPU for inverse scaling
-    predicted = model(X_test).detach().cpu().numpy()
-
-    # Create a placeholder for scaling that matches the input structure
-    placeholder = np.zeros((predicted.shape[0], 5))  # 5 columns: open, high, low, close, vol_as_u
-    placeholder[:, 3] = predicted.flatten()  # Place predicted close prices in the correct column (index 3)
-    predicted_prices = scaler.inverse_transform(placeholder)[:, 3]  # Extract only the inverse-transformed close price
+    predicted = model(X_test).detach().cpu().numpy()  # Move to CPU for inverse scaling
+    predicted_prices = scaler.inverse_transform(np.concatenate((np.zeros((predicted.shape[0], 4)), predicted), axis=1))[
+                       :, 4]
 
     # Actual prices for comparison
-    placeholder_actual = np.zeros((y_test.shape[0], 5))
-    placeholder_actual[:, 3] = y_test.cpu().numpy()  # Place actual close prices in the same column
-    actual_prices = scaler.inverse_transform(placeholder_actual)[:, 3]  # Extract only the close price
+    actual_prices = scaler.inverse_transform(
+        np.concatenate((np.zeros((y_test.shape[0], 4)), y_test.view(-1, 1).cpu().numpy()), axis=1))[:, 4]
 
 # Plot the results
 plt.plot(actual_prices, color='black', label='Actual Price')
