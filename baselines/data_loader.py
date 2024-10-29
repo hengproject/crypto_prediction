@@ -42,6 +42,6 @@ def load_crypto_data(file_path):
 
 
 # Example usage
-file_path = 'btc_future_only_10s.csv'
+file_path = '../btc_future_only_10s.csv'
 crypto_data = load_crypto_data(file_path)
 print(crypto_data.head())

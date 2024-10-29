@@ -2,9 +2,8 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 import numpy as np
-import pandas as pd
 from sklearn.preprocessing import MinMaxScaler
-from data_loader import crypto_data
+from baselines.data_loader import crypto_data
 
 # Prepare the data with prior data only for prediction
 def prepare_rnn_data(data, sequence_length=60):
@@ -56,7 +55,7 @@ for epoch in range(num_epochs):
     loss.backward()
     optimizer.step()
 
-    if (epoch+1) % 10 == 0:
+    if (epoch+1) % 2 == 0:
         print(f'Epoch [{epoch+1}/{num_epochs}], Loss: {loss.item():.4f}')
 
 # Evaluate the model
