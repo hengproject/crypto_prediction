@@ -32,7 +32,7 @@ def load_crypto_data(file_path):
         'low': 'min',  # Lowest price within the minute
         'is_closed': 'last',  # Whether the minute closed (should generally be True)
         'interval': 'min',  # Keep the original interval type for reference
-        'type': 'last',  # Keep the type for reference
+        'type': 'last',  # Keep the t         ype for reference
         'pair': 'last'  # Keep the trading pair for reference
     }).dropna()  # Drop rows with missing data after resampling
 
