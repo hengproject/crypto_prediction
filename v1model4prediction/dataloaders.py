@@ -7,7 +7,7 @@ from torch.utils.data import Dataset, DataLoader
 
 # ts smaller than gte will be neglected
 class TimeSeriesDataset(Dataset):
-    def __init__(self, df, input_features, output_features,gte=0):
+    def __init__(self, df, input_features, output_features,gte=0,device = 'cuda'):
         self.df = df.copy()
         self.input_features = input_features
         self.output_features = output_features
@@ -19,6 +19,7 @@ class TimeSeriesDataset(Dataset):
         self.future_h_agg = {}
         self.available_timestamp_list = []
         self.prepare_aggregation(gte)
+        self.device = device
 
     def _aggregate_time_range(self,start_timestamp, unit_duration):
         high, low, open_price, close_price = -np.inf, np.inf, None, None
@@ -77,8 +78,11 @@ class TimeSeriesDataset(Dataset):
             if aim not in self.future_h_agg:
                 self.future_h_agg[aim] = self._aggregate_time_range(aim, 3600)
             y_h.append(self.future_h_agg[aim])
-        return [torch.tensor(X, dtype=torch.float32), torch.tensor(y_min, dtype=torch.float32), torch.tensor(y_h, dtype=torch.float32)]
-
+        return (
+                torch.tensor(X, dtype=torch.float32).to(self.device),
+                torch.tensor(y_min, dtype=torch.float32).to(self.device),
+                torch.tensor(y_h, dtype=torch.float32).to(self.device)
+            )
 # 测试流程
 if __name__ == "__main__":
     # 读取 CSV 文件
@@ -105,7 +109,8 @@ if __name__ == "__main__":
     X, y_60min, y_12h = train_dataset[1]
     X, y_60min, y_12h = train_dataset[2]
     X, y_60min, y_12h = train_dataset[3]
+    print(len(train_loader))
     # 迭代数据加载器
     for data in train_loader:
-        print("Batch input features:", data.shape)
+        print("Batch input features:", data)
         break
