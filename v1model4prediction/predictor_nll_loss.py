@@ -90,6 +90,7 @@ def train_model():
     df = pd.read_csv('btc_future_only_10s_a1.csv', header=0)
     #手动选数据
     df = df[2581205:]
+    
     input_features = ['open', 'high', 'low', 'close', 'vol_as_u']
     output_features = ['open', 'high', 'low', 'close']
 
@@ -105,10 +106,12 @@ def train_model():
     joblib.dump(output_scaler, 'output_scaler.save')
 
     # 创建数据集实例
-    dataset = TimeSeriesDataset(df, input_features, output_features)
-
+    all_dataset = TimeSeriesDataset(df, input_features, output_features)
+    train_size = int(len(all_dataset) * 0.9)
+    train_dataset = TimeSeriesDataset(df.iloc[:train_size], input_features, output_features)
+    # test_dataset = TimeSeriesDataset(df.iloc[train_size:], input_features, output_features)
     # 计算总的批次数
-    total_samples = len(dataset)
+    total_samples = len(train_dataset)
     total_batches = total_samples // batch_size
 
     # 初始化模型和优化器
@@ -149,7 +152,7 @@ def train_model():
     # 使用 Subset，将数据集从 start_index 开始
     start_index = start_batch * batch_size
     remaining_indices = list(range(start_index, total_samples))
-    subset_dataset = Subset(dataset, remaining_indices)
+    subset_dataset = Subset(train_dataset, remaining_indices)
     data_loader = DataLoader(subset_dataset, batch_size=batch_size, shuffle=False, drop_last=True)
 
     current_batch = start_batch
